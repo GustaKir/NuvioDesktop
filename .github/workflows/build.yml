@@ -69,6 +69,44 @@ jobs:
           cd MPVKit
           make build platform=macos
 
+
+
+
+
+
+
+# ... previous steps ...
+
+      - name: Build MPVKit (macOS only)
+        if: runner.os == 'macOS'
+        run: |
+          cd MPVKit
+          make build platform=macos
+
+      # ADD THIS NEW STEP HERE
+      - name: Create local.properties
+        shell: bash
+        run: touch local.properties
+
+      - name: Build and Package Distribution
+        shell: bash
+        # Packages the app into a native installer (.dmg for macOS, .msi/.exe for Windows)
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            # Windows requires the dependency paths to be passed explicitly
+            ./gradlew :composeApp:packageDistributionForCurrentOS -Pnuvio.webview2.dir="$WV2_DIR" -Pnuvio.windows.libmpv.runtimeDir="$MPV_DIR"
+          else
+            # macOS and Linux paths
+            ./gradlew :composeApp:packageDistributionForCurrentOS
+          fi
+          
+      # ... Upload Artifacts ...
+
+
+
+
+
+
       - name: Build and Package Distribution
         shell: bash
         # Packages the app into a native installer (.dmg for macOS, .msi/.exe for Windows)
