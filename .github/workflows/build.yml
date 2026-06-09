@@ -23,8 +23,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          # Fetch submodules, though we will manually update MPVKit to the required branch below
+
 
 
       - name: Set up JDK 17
