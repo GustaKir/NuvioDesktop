@@ -54,8 +54,9 @@ jobs:
           WV2_PATH=$(find "$(pwd)/windows_deps" -maxdepth 1 -name "Microsoft.Web.WebView2*" -type d | head -n 1)
           echo "WV2_DIR=$WV2_PATH" >> $GITHUB_ENV
           
-          # 2. Download pre-compiled libmpv for Windows
-          curl.exe -L -o libmpv.7z "https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20231210-git-mac9289.7z/download"
+          # 2. Download pre-compiled libmpv for Windows (using direct mirror URL)
+          curl.exe -L -o libmpv.7z "https://downloads.sourceforge.net/project/mpv-player-windows/libmpv/mpv-dev-x86_64-v3-20231210-git-mac9289.7z"
+          
           # Extract the archive
           7z x libmpv.7z -o"windows_deps/libmpv"
           echo "MPV_DIR=$(pwd)/windows_deps/libmpv" >> $GITHUB_ENV
