@@ -45,19 +45,21 @@ jobs:
       - name: "Fetch Windows Dependencies (WebView2 and libmpv)"
         if: runner.os == 'Windows'
         shell: bash
+        # Using GITHUB_TOKEN to avoid GitHub API rate limits when downloading releases
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           mkdir -p windows_deps/libmpv
-          
-          # 1. Download WebView2 via NuGet
+
           nuget install Microsoft.Web.WebView2 -OutputDirectory windows_deps
           WV2_PATH=$(find "$(pwd)/windows_deps" -maxdepth 1 -name "Microsoft.Web.WebView2*" -type d | head -n 1)
           echo "WV2_DIR=$WV2_PATH" >> $GITHUB_ENV
           
-          # 2. Download pre-compiled libmpv for Windows (using reliable GitHub release)
-          curl.exe -L -o libmpv.7z "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20231210/mpv-dev-x86_64-20231210-git-mac9289.7z"
-          
-          # Extract the archive
-          7z x libmpv.7z -o"windows_deps/libmpv"
+ 
+          gh release download -R shinchiro/mpv-winbuild-cmake --pattern "mpv-dev-x86_64-v3-*.7z" --dir windows_deps
+
+          MPV_ARCHIVE=$(find windows_deps -maxdepth 1 -name "mpv-dev-x86_64-v3-*.7z" | head -n 1)
+          7z x "$MPV_ARCHIVE" -o"windows_deps/libmpv"
           echo "MPV_DIR=$(pwd)/windows_deps/libmpv" >> $GITHUB_ENV
 
       - name: Build MPVKit (macOS only)
