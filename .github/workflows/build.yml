@@ -23,8 +23,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-
+        # Intentionally omitting `submodules: recursive` to avoid the broken libass-android link
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -43,6 +42,24 @@ jobs:
           git -C MPVKit switch Nuvio
           git -C MPVKit pull --ff-only
 
+      - name: "Fetch Windows Dependencies (WebView2 and libmpv)"
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p windows_deps/libmpv
+          
+          # 1. Download WebView2 via NuGet (pre-installed on Actions runners)
+          nuget install Microsoft.Web.WebView2 -OutputDirectory windows_deps
+          # Find the exact extracted folder path and save it to GITHUB_ENV
+          WV2_PATH=$(find "$(pwd)/windows_deps" -maxdepth 1 -name "Microsoft.Web.WebView2*" -type d | head -n 1)
+          echo "WV2_DIR=$WV2_PATH" >> $GITHUB_ENV
+          
+          # 2. Download pre-compiled libmpv for Windows
+          curl.exe -L -o libmpv.7z "https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-v3-20231210-git-mac9289.7z/download"
+          # Extract the archive
+          7z x libmpv.7z -o"windows_deps/libmpv"
+          echo "MPV_DIR=$(pwd)/windows_deps/libmpv" >> $GITHUB_ENV
+
       - name: Build MPVKit (macOS only)
         if: runner.os == 'macOS'
         # macOS requires building the MPVKit libmpv artifacts manually before Gradle runs
@@ -51,8 +68,16 @@ jobs:
           make build platform=macos
 
       - name: Build and Package Distribution
+        shell: bash
         # Packages the app into a native installer (.dmg for macOS, .msi/.exe for Windows)
-        run: ./gradlew :composeApp:packageDistributionForCurrentOS
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            # Windows requires the dependency paths to be passed explicitly
+            ./gradlew :composeApp:packageDistributionForCurrentOS -Pnuvio.webview2.dir="$WV2_DIR" -Pnuvio.windows.libmpv.runtimeDir="$MPV_DIR"
+          else
+            # macOS and Linux paths
+            ./gradlew :composeApp:packageDistributionForCurrentOS
+          fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
